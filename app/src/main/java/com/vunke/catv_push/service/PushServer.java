@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
@@ -61,7 +62,29 @@ public class PushServer extends Service implements MqttCallback,IMqttActionListe
         super.onCreate();
 //        initDeviceInfo();
 //        initMqtt();
-        initPush();
+        Observable.interval(15, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.io())
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribe(new DisposableObserver<Long>() {
+                    @Override
+                    public void onNext(Long aLong) {
+                        Log.i(TAG, "onCreate initPush: ");
+                        initPush();
+                        onComplete();
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        Log.i(TAG, "onCreate onError: ");
+                        initPush();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.i(TAG, "onCreate onComplete: ");
+                    }
+                });
     }
 
     private void initPush() {
@@ -99,12 +122,12 @@ public class PushServer extends Service implements MqttCallback,IMqttActionListe
     };
     private void initRequest() {
         Log.i(TAG, "initRequest: ");
-        if (System.currentTimeMillis() - requestTime >10000L){
+        if (System.currentTimeMillis() - requestTime >15000L){
             requestTime = System.currentTimeMillis();
             initMqtt();
         }else{
             Log.i(TAG, "initRequest: 10秒内重复请求");
-            handler.sendEmptyMessageDelayed(0x1190,10000L);
+            handler.sendEmptyMessageDelayed(0x1190,15000L);
         }
     }
 

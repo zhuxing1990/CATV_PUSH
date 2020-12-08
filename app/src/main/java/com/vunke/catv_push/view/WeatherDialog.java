@@ -14,6 +14,7 @@ import com.vunke.catv_push.modle.PushInfoBean;
 import com.vunke.catv_push.modle.WeatherInfoBean;
 import com.vunke.catv_push.util.PushInfoUtil;
 import com.vunke.catv_push.util.TimeUtil;
+import com.vunke.catv_push.util.Utils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,12 +60,24 @@ public class WeatherDialog extends  WeatherBaseDialog{
                     showText(isShow2);
                     break;
                 case 0x1890:
-                    if (disPlayWeatherInfoBean.getPushInfoBean()!=null){
-                        Log.i(TAG, "handleMessage: has long term display");
-                        if (oldWeatherInfoBean.getPushInfoBean()!=null){
-                            if (disPlayWeatherInfoBean.getPushInfoBean().toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
-                                Log.i(TAG, "handleMessage: 获取数据和当前推送内容一致");
+                    try {
+                        if (disPlayWeatherInfoBean.getPushInfoBean()!=null){
+                            Log.i(TAG, "handleMessage: has long term display");
+                            if (oldWeatherInfoBean.getPushInfoBean()!=null){
+                                if (disPlayWeatherInfoBean.getPushInfoBean().toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
+                                    Log.i(TAG, "handleMessage: 获取数据和当前推送内容一致");
+                                }else{
+                                    oldWeatherInfoBean = disPlayWeatherInfoBean;
+                                    if (disPlayWeatherInfoBean.isShow()==true){
+                                        Log.i(TAG, "handleMessage: 获取当前数据正在显示");
+                                    }else{
+                                        Log.i(TAG, "handleMessage: 获取当前常显数据没有显示");
+                                        showData(disPlayWeatherInfoBean);
+                                    }
+//                                showData(disPlayWeatherInfoBean);
+                                }
                             }else{
+                                Log.i(TAG, "handleMessage: get old push is null");
                                 oldWeatherInfoBean = disPlayWeatherInfoBean;
                                 if (disPlayWeatherInfoBean.isShow()==true){
                                     Log.i(TAG, "handleMessage: 获取当前数据正在显示");
@@ -72,24 +85,30 @@ public class WeatherDialog extends  WeatherBaseDialog{
                                     Log.i(TAG, "handleMessage: 获取当前常显数据没有显示");
                                     showData(disPlayWeatherInfoBean);
                                 }
-//                                showData(disPlayWeatherInfoBean);
-                            }
-                        }else{
-                            Log.i(TAG, "handleMessage: get old push is null");
-                            oldWeatherInfoBean = disPlayWeatherInfoBean;
-                            if (disPlayWeatherInfoBean.isShow()==true){
-                                Log.i(TAG, "handleMessage: 获取当前数据正在显示");
-                            }else{
-                                Log.i(TAG, "handleMessage: 获取当前常显数据没有显示");
-                                showData(disPlayWeatherInfoBean);
-                            }
 //                            showData(disPlayWeatherInfoBean);
+                            }
                         }
+                    }catch (Exception e){
+                        e.printStackTrace();
                     }
                     break;
                 case 0x1990:
-                    PushInfoBean pushInfoBean = (PushInfoBean) msg.obj;
-                    startQuery(pushInfoBean);
+                    try {
+                        PushInfoBean pushInfoBean = (PushInfoBean) msg.obj;
+                        startQuery(pushInfoBean);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    break;
+                case 0x1991:
+                    try {
+                        WeatherInfoBean weatherInfoBean = (WeatherInfoBean)msg.obj;
+                        showData(weatherInfoBean);
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
+                    break;
+                default:
                     break;
             }
         }
@@ -185,6 +204,16 @@ public class WeatherDialog extends  WeatherBaseDialog{
 
     private void showData(final WeatherInfoBean weatherInfoBean) {
         Log.i(TAG, "shwoData: ");
+        boolean isAuth = Utils.isAuth(context);
+        if (isAuth){
+            Log.i(TAG, "weatherDialog: isAuth or push message is show,don't show");
+            Message msg = Message.obtain();
+            msg.what = 0x1991;
+            msg.obj = weatherInfoBean;
+            handler.sendMessageDelayed(msg,5000L);
+            return;
+        }
+        Log.i(TAG, "weatherDialog: start show");
         disposedShowDataObservable(weatherInfoBean);
         final PushInfoBean pushInfoBean = weatherInfoBean.getPushInfoBean();
         long intervalTime = pushInfoBean.getIntervalTime();
