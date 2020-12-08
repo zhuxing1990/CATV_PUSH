@@ -63,7 +63,7 @@ public class PushUtil {
      * 连接MQTT服务器
      */
     public void doClientConnection() {
-        Log.d(TAG,"是否链接成功：" + client.isConnected());
+        Log.d(TAG,"是否连接成功：" + client.isConnected());
         if (!client.isConnected() && Utils.isNetConnected(context)) {
             try {
                 client.connect(mMqttConnectOptions, null, iMqttActionListener);

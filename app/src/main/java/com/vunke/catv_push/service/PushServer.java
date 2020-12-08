@@ -23,6 +23,8 @@ import com.vunke.catv_push.modle.PushLog;
 import com.vunke.catv_push.modle.TopicBean;
 import com.vunke.catv_push.mqtt.PushUtil;
 import com.vunke.catv_push.util.PushInfoUtil;
+import com.vunke.catv_push.util.TimeUtil;
+import com.vunke.catv_push.view.WeatherDialog;
 
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -342,19 +344,36 @@ public class PushServer extends Service implements MqttCallback,IMqttActionListe
                     pushInfoBean.setPushName(topic);
                     pushInfoBean.setAcc_time(System.currentTimeMillis());
                     pushInfoBean.setPushStatus("2");
-                    PushInfoUtil.savePushInfo(this,pushInfoBean);
-                    PushLog pushLog = new PushLog();
-                    pushLog.setTimestamp(System.currentTimeMillis());
-                    pushLog.setAcc_time(System.currentTimeMillis());
-                    PushManager.UpLoadPushLog(this,pushInfoBean,pushLog);
-                    Intent intent = new Intent(this,ShowPushService.class);
-                    intent.setAction(ShowPushService.UPDATE_ACTION);
-                    startService(intent);
+                    if (pushInfoBean.getPushType().equals("4")){
+                        WeatherDialog weatherDialog = WeatherDialog.getInstance(getApplicationContext());
+                        if (!weatherDialog.isShow()) {
+                            weatherDialog.showView();
+                        }
+                        weatherDialog.addPushInfoBean(pushInfoBean);
+                    }else{
+                        PushInfoUtil.savePushInfo(this,pushInfoBean);
+                        Intent intent = new Intent(this,ShowPushService.class);
+                        intent.setAction(ShowPushService.UPDATE_ACTION);
+                        startService(intent);
+                    }
+                    long time = System.currentTimeMillis();
+                    long expireTime = pushInfoBean.getExpireTime();
+                    boolean isExpire = TimeUtil.isExpire(time,expireTime);
+                    if (!isExpire){
+                        uploadLog(pushInfoBean);
+                    }
                 }
             }
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    private void uploadLog(PushInfoBean pushInfoBean) {
+        PushLog pushLog = new PushLog();
+        pushLog.setTimestamp(System.currentTimeMillis());
+        pushLog.setAcc_time(System.currentTimeMillis());
+        PushManager.UpLoadPushLog(this,pushInfoBean,pushLog);
     }
 
     @Override

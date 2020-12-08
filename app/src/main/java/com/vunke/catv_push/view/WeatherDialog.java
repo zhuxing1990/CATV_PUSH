@@ -1,28 +1,24 @@
 package com.vunke.catv_push.view;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
 import com.bumptech.glide.Glide;
-import com.vunke.catv_push.R;
 import com.vunke.catv_push.modle.PushInfoBean;
+import com.vunke.catv_push.modle.WeatherInfoBean;
 import com.vunke.catv_push.util.PushInfoUtil;
 import com.vunke.catv_push.util.TimeUtil;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
@@ -31,14 +27,17 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
-public class WeatherDialog {
+public class WeatherDialog extends  WeatherBaseDialog{
     private static final String TAG = "weatherDialog";
     private static WeatherDialog instance;
-    private PushInfoBean oldPushInfo;
-    private PushInfoBean DisPlayPushInfo;
-    private Context context;
-    private WindowManager windowManager;
-    private WindowManager.LayoutParams layoutParams;
+    private WeatherInfoBean oldWeatherInfoBean= new WeatherInfoBean();
+    private WeatherInfoBean disPlayWeatherInfoBean= new WeatherInfoBean();
+    private List<WeatherInfoBean> weatherList;
+
+    public WeatherDialog(Context context) {
+        super(context);
+        weatherList = new ArrayList<>();
+    }
 
     public static WeatherDialog getInstance(Context context) {
         if (instance==null){
@@ -60,86 +59,138 @@ public class WeatherDialog {
                     showText(isShow2);
                     break;
                 case 0x1890:
-                    if (DisPlayPushInfo!=null){
+                    if (disPlayWeatherInfoBean.getPushInfoBean()!=null){
                         Log.i(TAG, "handleMessage: has long term display");
-                        if (oldPushInfo!=null){
-                            if (DisPlayPushInfo.toString().equals(oldPushInfo.toString())){
+                        if (oldWeatherInfoBean.getPushInfoBean()!=null){
+                            if (disPlayWeatherInfoBean.getPushInfoBean().toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
                                 Log.i(TAG, "handleMessage: 获取数据和当前推送内容一致");
                             }else{
-                                oldPushInfo = DisPlayPushInfo;
-                                showData(DisPlayPushInfo);
+                                oldWeatherInfoBean = disPlayWeatherInfoBean;
+                                if (disPlayWeatherInfoBean.isShow()==true){
+                                    Log.i(TAG, "handleMessage: 获取当前数据正在显示");
+                                }else{
+                                    Log.i(TAG, "handleMessage: 获取当前常显数据没有显示");
+                                    showData(disPlayWeatherInfoBean);
+                                }
+//                                showData(disPlayWeatherInfoBean);
                             }
                         }else{
                             Log.i(TAG, "handleMessage: get old push is null");
-                            oldPushInfo = DisPlayPushInfo;
-                            showData(DisPlayPushInfo);
+                            oldWeatherInfoBean = disPlayWeatherInfoBean;
+                            if (disPlayWeatherInfoBean.isShow()==true){
+                                Log.i(TAG, "handleMessage: 获取当前数据正在显示");
+                            }else{
+                                Log.i(TAG, "handleMessage: 获取当前常显数据没有显示");
+                                showData(disPlayWeatherInfoBean);
+                            }
+//                            showData(disPlayWeatherInfoBean);
                         }
                     }
+                    break;
+                case 0x1990:
+                    PushInfoBean pushInfoBean = (PushInfoBean) msg.obj;
+                    startQuery(pushInfoBean);
                     break;
             }
         }
     };
-    public WeatherDialog(Context context){
-        this.context = context;
-        windowManager= (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        layoutParams = new WindowManager.LayoutParams();
-        layoutParams.type = WindowManager.LayoutParams.TYPE_TOAST;
-        layoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        layoutParams.gravity = Gravity.LEFT| Gravity.TOP;
-        // 设置图片格式，效果为背景透明
-        layoutParams.format = PixelFormat.RGBA_8888;
-//        pushList=new ArrayList<>();
-    }
-    public void savePushInfoBean(PushInfoBean pushInfoBean){
-        Log.i(TAG, "savePushInfoBean: ");
+
+    public void addPushInfoBean(PushInfoBean pushInfoBean){
+        Log.i(TAG, "addPushInfoBean: ");
         if (pushInfoBean!=null){
             if (1==pushInfoBean.getShowRules()){
-                Log.i(TAG, "savePushInfoBean: has long term display");
-                DisPlayPushInfo = pushInfoBean;
+                Log.i(TAG, "addPushInfoBean: has long term display");
+                disPlayWeatherInfoBean.setPushInfoBean(pushInfoBean);
             }
         }
-        if (null==oldPushInfo){
-            oldPushInfo = pushInfoBean;
-            showData(oldPushInfo);
-            return;
-        }
-        if (pushInfoBean.toString().equals(oldPushInfo.toString())){
-            Log.i(TAG, "savePushInfoBean: 获取数据和当前推送内容一致");
-            return;
+        Log.i(TAG, "addPushInfoBean: get push "+pushInfoBean.toString());
+        if (null==oldWeatherInfoBean.getPushInfoBean()){
+            oldWeatherInfoBean.setPushInfoBean(pushInfoBean);
+        }else if (pushInfoBean.toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
+            Log.i(TAG, "addPushInfoBean: 获取数据和当前推送内容一致");
         }else{
-            oldPushInfo = pushInfoBean;
-            showData(oldPushInfo);
-            return;
+            oldWeatherInfoBean.setPushInfoBean(pushInfoBean);
+        }
+        QueryPushInfo(pushInfoBean);
+    }
+
+    private void QueryPushInfo(final PushInfoBean pushInfoBean) {
+        Log.i(TAG, "QueryPushInfo: ");
+        try {
+            if(weatherList!=null&&weatherList.size()!=0){
+                Log.i(TAG, "QueryPushInfo: weatherList size:"+ weatherList.size());
+               Message msg = Message.obtain();
+               msg.what= 0x1990;
+               msg.obj = pushInfoBean;
+               handler.sendMessageDelayed(msg,10000);
+//               handler.sendMessage(msg);
+            }else{
+                Log.i(TAG, "QueryPushInfo: weatherList is null");
+                if (pushInfoBean!=null){
+                    WeatherInfoBean weatherInfoBean = new WeatherInfoBean();
+                    weatherInfoBean.setPushInfoBean(pushInfoBean);
+                    weatherList.add(weatherInfoBean);
+                    showData(weatherInfoBean);
+                }
+            }
+        }catch (NullPointerException e){
+            e.printStackTrace();
         }
     }
-    private FrameLayout frameLayout;
-    private ImageView imageView;
-    private MarqueeTextView textView;
-    public void showView(){
-        Log.i(TAG, "showView: ");
-        if (!isShow){
-            frameLayout = new FrameLayout(context);
-            FrameLayout.LayoutParams fragmeLayoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,FrameLayout.LayoutParams.MATCH_PARENT);
-            frameLayout.setLayoutParams(fragmeLayoutParams);
-            View view = LayoutInflater.from(context).inflate(R.layout.dialog_weather,null);
-            imageView= view.findViewById(R.id.weather_img);
-            textView = view.findViewById(R.id.weather_textview);
-            frameLayout.addView(view);
-            windowManager.addView(frameLayout,layoutParams);
-            isShow = true;
-        }
-    }
-    private DisposableObserver<Long> showDataObserver;
-    private void showData(final PushInfoBean pushInfoBean) {
-        Log.i(TAG, "shwoData: ");
-        if (showDataObserver!=null){
-            if (!showDataObserver.isDisposed()){
-                showDataObserver.dispose();
+
+    private void startQuery(final PushInfoBean pushInfoBean) {
+        Log.i(TAG, "startQuery: ");
+        boolean hasNewMessage = true;
+        for (int i = 0; i < weatherList.size(); i++) {
+            WeatherInfoBean weatherInfoBean = weatherList.get(i);
+            PushInfoBean oldbean = weatherInfoBean.getPushInfoBean();
+//            Log.i(TAG, "startQuery: oldbean:"+oldbean.toString());
+            if (oldbean.toString().equals(pushInfoBean.toString())){
+                Log.i(TAG, "startQuery: has pushinfo to weatherList");
+            }else{
+                if (oldbean.getGroupId().equals(pushInfoBean.getGroupId())){
+                    Log.i(TAG, "startQuery: message is change,update message ");
+                    hasNewMessage = false;
+                    weatherInfoBean.setPushInfoBean(pushInfoBean);
+                    oldbean=pushInfoBean;
+                    Log.i(TAG, "startQuery: set oldbean:"+oldbean.toString());
+                    showData(weatherInfoBean);
+                }
             }
         }
+        if (hasNewMessage){
+            Log.i(TAG, "startQuery: has new message");
+            WeatherInfoBean weatherInfoBean = new WeatherInfoBean();
+            weatherInfoBean.setPushInfoBean(pushInfoBean);
+            weatherList.add(weatherInfoBean);
+            showData(weatherInfoBean);
+        }
+    }
+
+    private void disposedShowDataObservable(WeatherInfoBean weatherInfoBean) {
+        if (weatherInfoBean.getShowDataObserver()!=null){
+            if (!weatherInfoBean.getShowDataObserver().isDisposed()){
+                weatherInfoBean.getShowDataObserver().dispose();
+            }
+        }
+    }
+    private void disposedExpireDataObservable(WeatherInfoBean weatherInfoBean) {
+        if (weatherInfoBean.getExpirePbservable()!=null){
+            if (!weatherInfoBean.getExpirePbservable().isDisposed()){
+                weatherInfoBean.getExpirePbservable().dispose();
+            }
+        }
+    }
+
+
+    private void showData(final WeatherInfoBean weatherInfoBean) {
+        Log.i(TAG, "shwoData: ");
+        disposedShowDataObservable(weatherInfoBean);
+        final PushInfoBean pushInfoBean = weatherInfoBean.getPushInfoBean();
         long intervalTime = pushInfoBean.getIntervalTime();
         Log.i(TAG, "shwoData: 间隔时间:"+intervalTime+"分钟");
-        Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.MINUTES)
+        Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.MINUTES)//------------正式
+//        Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.SECONDS)//------------测式
                 .filter(new Predicate<Long>() {
                     @Override
                     public boolean test(Long aLong) throws Exception {
@@ -162,7 +213,9 @@ public class WeatherDialog {
                                 if (isShow){
                                     if (pushInfoBean.getStartTime()==0&&pushInfoBean.getEndTime()==0){
                                         return true;
-                                    }else{
+                                    }else if (pushInfoBean.getStartTime() == pushInfoBean.getEndTime())
+                                        return true;
+                                     else{
                                         long startTime = pushInfoBean.getStartTime();
                                         Log.i(TAG, "shwoData startTime: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,startTime));
                                         long endTime = pushInfoBean.getEndTime();
@@ -180,14 +233,19 @@ public class WeatherDialog {
                                 }
                             }else{
                                 Log.i(TAG, "shwoData:test this push message is expire");
-                                if (DisPlayPushInfo!=null&&pushInfoBean.toString().equals(DisPlayPushInfo.toString())){
-                                    DisPlayPushInfo = null;
+                                if (disPlayWeatherInfoBean.getPushInfoBean()!=null&&pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())){
+                                    disPlayWeatherInfoBean.setPushInfoBean(null);
+                                    disPlayWeatherInfoBean.setShow(false);
+                                    disposedShowDataObservable(disPlayWeatherInfoBean);
+                                    disposedExpireDataObservable(disPlayWeatherInfoBean);
                                 }
                                 SendShowImage(false);
                                 SendShowText(false);
                                 pushInfoBean.setPushStatus("4");
                                 PushInfoUtil.uploadPushLog(pushInfoBean,context);
                                 PushInfoUtil.deletePushInfo(context,pushInfoBean.getPushId());
+                                weatherInfoBean.setShow(false);
+                                RemoveExpireMessage(weatherInfoBean);
                                 SendShowLongTerm();
                                 return false;
                             }
@@ -197,7 +255,7 @@ public class WeatherDialog {
                         }
                     }
                 });
-        showDataObserver = new DisposableObserver<Long>() {
+        DisposableObserver<Long> showDataObserver = new DisposableObserver<Long>() {
             @Override
             public void onNext(Long aLong) {
                 Log.i(TAG, "shwoData onNext: ");
@@ -213,6 +271,11 @@ public class WeatherDialog {
                 pushInfoBean.setPushStatus("3");
                 PushInfoUtil.uploadPushLog(pushInfoBean, context);
                 hideView(pushInfoBean);
+                weatherInfoBean.setShow(true);
+                oldWeatherInfoBean.setShow(true);
+                if(1==pushInfoBean.getShowRules()){
+                   disPlayWeatherInfoBean.setShow(true);
+                }
             }
 
             @Override
@@ -228,10 +291,75 @@ public class WeatherDialog {
                 dispose();
             }
         };
+        weatherInfoBean.setShowDataObserver(showDataObserver);
+        oldWeatherInfoBean.setShowDataObserver(showDataObserver);
+        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
+            disPlayWeatherInfoBean.setShowDataObserver(showDataObserver);
+        }
         observable.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(showDataObserver);
+                .subscribe(weatherInfoBean.getShowDataObserver());
+        getExpireObservable(weatherInfoBean);
+    }
 
+    private void RemoveExpireMessage(WeatherInfoBean weatherInfoBean) {
+        try {
+            weatherList.remove(weatherInfoBean);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private void getExpireObservable(final WeatherInfoBean weatherInfoBean) {
+        Log.i(TAG, "getExpireObservable: ");
+        disposedExpireDataObservable(weatherInfoBean);
+        final PushInfoBean pushInfoBean = weatherInfoBean.getPushInfoBean();
+        DisposableObserver<Long> expirePbservable = new DisposableObserver<Long>() {
+            @Override
+            public void onNext(Long aLong) {
+                long time = System.currentTimeMillis();
+                long expire_time = pushInfoBean.getExpireTime();
+                boolean isExpire = TimeUtil.isExpire(time, expire_time);
+                Log.i(TAG, "shwoData new time: " + TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese, time));
+                Log.i(TAG, "shwoData expire_time: " + TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese, expire_time));
+                if (isExpire) {
+                    Log.i(TAG, "shwoData:test this push message is expire");
+                    if (disPlayWeatherInfoBean.getPushInfoBean() != null && pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())) {
+                        disPlayWeatherInfoBean.setPushInfoBean(null);
+                        disPlayWeatherInfoBean.setShow(false);
+                        disPlayWeatherInfoBean.getShowDataObserver().dispose();
+                    }
+                    SendShowImage(false);
+                    SendShowText(false);
+                    pushInfoBean.setPushStatus("4");
+                    PushInfoUtil.uploadPushLog(pushInfoBean, context);
+                    PushInfoUtil.deletePushInfo(context, pushInfoBean.getPushId());
+                    SendShowLongTerm();
+                    dispose();
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                e.printStackTrace();
+                Log.i(TAG, "onComplete:  get expire  has error");
+                dispose();
+            }
+
+            @Override
+            public void onComplete() {
+                Log.i(TAG, "onComplete: message expire");
+                dispose();
+            }
+        };
+        weatherInfoBean.setExpirePbservable(expirePbservable);
+        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
+            disPlayWeatherInfoBean.setExpirePbservable(expirePbservable);
+        }
+        Observable.interval(1, TimeUnit.MINUTES)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(weatherInfoBean.getExpirePbservable());
     }
 
     private void SendShowLongTerm() {
@@ -321,20 +449,5 @@ public class WeatherDialog {
         msg.what = 0x1889;
         handler.sendMessage(msg);
     }
-    private boolean isShow= false;
-    public boolean isShow(){
-        return isShow;
-    }
 
-    public void dismiss(){
-        try {
-            Log.i(TAG, "dismiss: ");
-            if (isShow) {
-                isShow = false;
-                windowManager.removeView(frameLayout);
-            }
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 }

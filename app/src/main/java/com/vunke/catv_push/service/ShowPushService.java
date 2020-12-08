@@ -160,7 +160,7 @@ public class ShowPushService extends Service {
                             if (!weatherDialog.isShow()) {
                                 weatherDialog.showView();
                             }
-                            weatherDialog.savePushInfoBean(pushInfoBean);
+                            weatherDialog.addPushInfoBean(pushInfoBean);
                         }
                     }else{
                         Log.i(TAG, "startQuery: get pushtype is default ");

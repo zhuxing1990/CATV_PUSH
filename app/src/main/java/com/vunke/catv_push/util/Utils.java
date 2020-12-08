@@ -8,6 +8,10 @@ import android.util.Log;
 
 import com.vunke.catv_push.base.WhiteList;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 public class Utils {
     private static final String TAG = "Utils";
 
@@ -126,5 +130,13 @@ public class Utils {
         else {
             return false;
         }
+    }
+
+    public static List<Object> removeDuplicate(List<Object> list){
+        Set set = new LinkedHashSet<Object>();
+        set.addAll(list);
+        list.clear();
+        list.addAll(set);
+        return list;
     }
 }

@@ -91,14 +91,14 @@ public class DevicesManager {
      * @return
      */
     public static String getSystemData(String str) {
-        Log.i(TAG, "getSystemData: "+str);
+//        Log.i(TAG, "getSystemData: "+str);
         String value2 = "unknown";
         Class<?> c = null;
         try {
             c = Class.forName("android.os.SystemProperties");
             Method get = c.getMethod("get", String.class, String.class);
             value2 = (String) (get.invoke(c, str, "unknown"));
-            Log.i("getSystemData", "get:" +str+":"+ value2);
+//            Log.i("getSystemData", "get:" +str+":"+ value2);
         } catch (Exception e) {
             e.printStackTrace();
             Log.i("getSystemData", "getSystemData failed");

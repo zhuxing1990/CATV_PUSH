@@ -5,9 +5,18 @@ public class BaseConfig {
 //    public static final String BASE_URL = "http://100.125.19.171:8082";
 
     // 内网测试
-    public static final String BASE_URL = "http://192.168.198.33:8082/realTimePush";
+//    public static final String BASE_URL = "http://192.168.198.33:8082/realTimePush";
+    //正式 域名
+    public static final String BASE_URL = "http://wntvmessage.hunancatv.com:8082/realTimePush";
 
+    /**
+     * 获取推送服务器信息等接口
+     */
     public static final String GET_SUBSCRIBE_LIST="/api/mqtt/getSubscribeList";
+
+    /**
+     * 上传推送日志
+     */
     public static final  String SET_PUSH_LOGS = "/api/mqtt/setPushLogs";
 
     public static final String PUSH_INFO_CONTENT = "content://com.vunke.catv_push/push_info";
