@@ -83,6 +83,7 @@ public class PushServer extends Service implements MqttCallback,IMqttActionListe
                     @Override
                     public void onComplete() {
                         Log.i(TAG, "onCreate onComplete: ");
+                        dispose();
                     }
                 });
     }
