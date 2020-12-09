@@ -61,11 +61,25 @@ public class WeatherDialog extends  WeatherBaseDialog{
                     break;
                 case 0x1890:
                     try {
-                        if (disPlayWeatherInfoBean.getPushInfoBean()!=null){
+                        if (disPlayWeatherInfoBean!=null&&disPlayWeatherInfoBean.getPushInfoBean()!=null){
                             Log.i(TAG, "handleMessage: has long term display");
-                            if (oldWeatherInfoBean.getPushInfoBean()!=null){
+                            Log.i(TAG, "handleMessage: get displayinfo:"+disPlayWeatherInfoBean.getPushInfoBean().toString());
+                            boolean isExpire = getExpire(disPlayWeatherInfoBean.getPushInfoBean());
+                            if (isExpire){
+                                Log.i(TAG, "handleMessage: get displayinfo is expire");
+                                disPlayWeatherInfoBean.setPushInfoBean(null);
+                                disPlayWeatherInfoBean.setShow(false);
+                                return;
+                            }
+                            if (oldWeatherInfoBean!=null&&oldWeatherInfoBean.getPushInfoBean()!=null){
                                 if (disPlayWeatherInfoBean.getPushInfoBean().toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
                                     Log.i(TAG, "handleMessage: 获取数据和当前推送内容一致");
+                                    if (!oldWeatherInfoBean.isShow()||!disPlayWeatherInfoBean.isShow()){
+                                        Log.i(TAG, "handleMessage: show disPlayInfo ");
+                                        showData(disPlayWeatherInfoBean);
+                                    }else{
+                                        Log.i(TAG, "handleMessage: disPlayInfo is Show");
+                                    }
                                 }else{
                                     oldWeatherInfoBean = disPlayWeatherInfoBean;
                                     if (disPlayWeatherInfoBean.isShow()==true){
@@ -95,6 +109,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
                 case 0x1990:
                     try {
                         PushInfoBean pushInfoBean = (PushInfoBean) msg.obj;
+                        Log.i(TAG, "handleMessage: delayed send pushinfo:"+pushInfoBean.toString());
                         startQuery(pushInfoBean);
                     }catch (Exception e){
                         e.printStackTrace();
@@ -102,6 +117,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
                     break;
                 case 0x1991:
                     try {
+                        Log.i(TAG, "handleMessage: message Delayed over ,start show");
                         WeatherInfoBean weatherInfoBean = (WeatherInfoBean)msg.obj;
                         showData(weatherInfoBean);
                     }catch (Exception e){
@@ -141,7 +157,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
                Message msg = Message.obtain();
                msg.what= 0x1990;
                msg.obj = pushInfoBean;
-               handler.sendMessageDelayed(msg,10000);
+               handler.sendMessageDelayed(msg,5000L);
 //               handler.sendMessage(msg);
             }else{
                 Log.i(TAG, "QueryPushInfo: weatherList is null");
@@ -186,20 +202,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
         }
     }
 
-    private void disposedShowDataObservable(WeatherInfoBean weatherInfoBean) {
-        if (weatherInfoBean.getShowDataObserver()!=null){
-            if (!weatherInfoBean.getShowDataObserver().isDisposed()){
-                weatherInfoBean.getShowDataObserver().dispose();
-            }
-        }
-    }
-    private void disposedExpireDataObservable(WeatherInfoBean weatherInfoBean) {
-        if (weatherInfoBean.getExpirePbservable()!=null){
-            if (!weatherInfoBean.getExpirePbservable().isDisposed()){
-                weatherInfoBean.getExpirePbservable().dispose();
-            }
-        }
-    }
+
 
 
     private void showData(final WeatherInfoBean weatherInfoBean) {
@@ -219,7 +222,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
         long intervalTime = pushInfoBean.getIntervalTime();
         Log.i(TAG, "shwoData: 间隔时间:"+intervalTime+"分钟");
         Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.MINUTES)//------------正式
-//        Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.SECONDS)//------------测式
+//        Observable<Long> observable = Observable.interval(0,intervalTime,TimeUnit.SECONDS)//------------测试
                 .filter(new Predicate<Long>() {
                     @Override
                     public boolean test(Long aLong) throws Exception {
@@ -228,9 +231,9 @@ public class WeatherDialog extends  WeatherBaseDialog{
                         if (!TextUtils.isEmpty(pushStatus)||"0".equals(pushStatus)||"1".equals(pushStatus)||"2".equals(pushStatus)){
                             long time = System.currentTimeMillis();
                             long expire_time = pushInfoBean.getExpireTime();
-                            boolean isExpire = TimeUtil.isExpire(time,expire_time);
                             Log.i(TAG, "shwoData new time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,time));
                             Log.i(TAG, "shwoData expire_time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,expire_time));
+                            boolean isExpire = TimeUtil.isExpire(time,expire_time);
                             if (!isExpire){
                                 Log.i(TAG, "shwoData: this push message not expire");
                                 long show_start_time = pushInfoBean.getShowStartTime();
@@ -261,21 +264,8 @@ public class WeatherDialog extends  WeatherBaseDialog{
                                     return false;
                                 }
                             }else{
-                                Log.i(TAG, "shwoData:test this push message is expire");
-                                if (disPlayWeatherInfoBean.getPushInfoBean()!=null&&pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())){
-                                    disPlayWeatherInfoBean.setPushInfoBean(null);
-                                    disPlayWeatherInfoBean.setShow(false);
-                                    disposedShowDataObservable(disPlayWeatherInfoBean);
-                                    disposedExpireDataObservable(disPlayWeatherInfoBean);
-                                }
-                                SendShowImage(false);
-                                SendShowText(false);
-                                pushInfoBean.setPushStatus("4");
-                                PushInfoUtil.uploadPushLog(pushInfoBean,context);
-                                PushInfoUtil.deletePushInfo(context,pushInfoBean.getPushId());
-                                weatherInfoBean.setShow(false);
-                                RemoveExpireMessage(weatherInfoBean);
-                                SendShowLongTerm();
+                                Log.i(TAG, "test this push message is expire");
+                                MessageExpire(pushInfoBean, weatherInfoBean);
                                 return false;
                             }
                         }else{
@@ -321,10 +311,10 @@ public class WeatherDialog extends  WeatherBaseDialog{
             }
         };
         weatherInfoBean.setShowDataObserver(showDataObserver);
-        oldWeatherInfoBean.setShowDataObserver(showDataObserver);
-        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
-            disPlayWeatherInfoBean.setShowDataObserver(showDataObserver);
-        }
+//        oldWeatherInfoBean.setShowDataObserver(showDataObserver);
+//        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
+//            disPlayWeatherInfoBean.setShowDataObserver(showDataObserver);
+//        }
         observable.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(weatherInfoBean.getShowDataObserver());
@@ -346,25 +336,11 @@ public class WeatherDialog extends  WeatherBaseDialog{
         DisposableObserver<Long> expirePbservable = new DisposableObserver<Long>() {
             @Override
             public void onNext(Long aLong) {
-                long time = System.currentTimeMillis();
-                long expire_time = pushInfoBean.getExpireTime();
-                boolean isExpire = TimeUtil.isExpire(time, expire_time);
-                Log.i(TAG, "shwoData new time: " + TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese, time));
-                Log.i(TAG, "shwoData expire_time: " + TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese, expire_time));
+                boolean isExpire = getExpire(pushInfoBean);
                 if (isExpire) {
-                    Log.i(TAG, "shwoData:test this push message is expire");
-                    if (disPlayWeatherInfoBean.getPushInfoBean() != null && pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())) {
-                        disPlayWeatherInfoBean.setPushInfoBean(null);
-                        disPlayWeatherInfoBean.setShow(false);
-                        disPlayWeatherInfoBean.getShowDataObserver().dispose();
-                    }
-                    SendShowImage(false);
-                    SendShowText(false);
-                    pushInfoBean.setPushStatus("4");
-                    PushInfoUtil.uploadPushLog(pushInfoBean, context);
-                    PushInfoUtil.deletePushInfo(context, pushInfoBean.getPushId());
-                    SendShowLongTerm();
-                    dispose();
+                    Log.i(TAG, "test this push message is expire");
+                    MessageExpire(pushInfoBean, weatherInfoBean);
+                    onComplete();
                 }
             }
 
@@ -382,20 +358,71 @@ public class WeatherDialog extends  WeatherBaseDialog{
             }
         };
         weatherInfoBean.setExpirePbservable(expirePbservable);
-        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
-            disPlayWeatherInfoBean.setExpirePbservable(expirePbservable);
-        }
+//        if (1==weatherInfoBean.getPushInfoBean().getShowRules()){
+//            disPlayWeatherInfoBean.setExpirePbservable(expirePbservable);
+//        }
         Observable.interval(1, TimeUnit.MINUTES)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(weatherInfoBean.getExpirePbservable());
     }
 
+    private void MessageExpire(PushInfoBean pushInfoBean, WeatherInfoBean weatherInfoBean) {
+        SendShowImage(false);
+        SendShowText(false);
+        pushInfoBean.setPushStatus("4");
+        RemoveExpireMessage(weatherInfoBean);
+        PushInfoUtil.uploadPushLog(pushInfoBean, context);
+        PushInfoUtil.deletePushInfo(context, pushInfoBean.getPushId());
+        weatherInfoBean.setShow(false);
+        disposedExpireDataObservable(weatherInfoBean);
+        disposedShowDataObservable(weatherInfoBean);
+        if (disPlayWeatherInfoBean.getPushInfoBean() != null && pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())) {
+            Log.i(TAG, "onNext: this message and disPlay message equals ,set disPlay message is null");
+            disPlayWeatherInfoBean.setPushInfoBean(null);
+            disPlayWeatherInfoBean.setShow(false);
+        }
+        if (oldWeatherInfoBean.getPushInfoBean() != null && pushInfoBean.toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())) {
+            Log.i(TAG, " onNext: this message and old message equals ,set old message is null");
+            oldWeatherInfoBean.setPushInfoBean(null);
+            oldWeatherInfoBean.setShow(false);
+        }
+        SendShowLongTerm();
+    }
+    private void disposedShowDataObservable(WeatherInfoBean weatherInfoBean) {
+        if (weatherInfoBean.getShowDataObserver()!=null){
+            if (!weatherInfoBean.getShowDataObserver().isDisposed()){
+                Log.i(TAG, "disposedShowDataObservable: ");
+                weatherInfoBean.getShowDataObserver().dispose();
+            }
+        }
+    }
+    private void disposedExpireDataObservable(WeatherInfoBean weatherInfoBean) {
+        if (weatherInfoBean.getExpirePbservable()!=null){
+            if (!weatherInfoBean.getExpirePbservable().isDisposed()){
+                Log.i(TAG, "disposedExpireDataObservable: ");
+                weatherInfoBean.getExpirePbservable().dispose();
+            }
+        }
+    }
+
     private void SendShowLongTerm() {
         Log.i(TAG, "SendShowLongTerm: ");
        handler.sendEmptyMessage(0x1890);
     }
-
+    private boolean getExpire(PushInfoBean pushInfoBean){
+       boolean isExpire = false;
+       try {
+           long time = System.currentTimeMillis();
+           long expire_time = pushInfoBean.getExpireTime();
+           Log.i(TAG, "getExpire "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,time));
+           Log.i(TAG, "getExpire: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,expire_time));
+           isExpire = TimeUtil.isExpire(time, expire_time);
+       }catch (Exception e){
+           e.printStackTrace();
+       }
+         return isExpire;
+    }
     DisposableObserver<Long> disposableObserver;
     private void hideView(final PushInfoBean pushInfoBean){
         if (disposableObserver!=null){
@@ -411,6 +438,16 @@ public class WeatherDialog extends  WeatherBaseDialog{
             public void onNext(Long aLong) {
                 Log.i(TAG, "hideView onNext: ");
                 SendShowText(false);
+                if (oldWeatherInfoBean!=null&&oldWeatherInfoBean.getPushInfoBean()!=null){
+                        Log.i(TAG, "onNext: set old info  not show");
+                        oldWeatherInfoBean.setShow(false);
+                }
+                if (disPlayWeatherInfoBean!=null&&disPlayWeatherInfoBean.getPushInfoBean()!=null){
+                    if (!pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())){
+                        Log.i(TAG, "onNext: set display info  not show");
+                        disPlayWeatherInfoBean.setShow(false);
+                    }
+                }
                 int showRules = pushInfoBean.getShowRules();
                 if (0 == showRules) {
                     SendShowImage(false);
