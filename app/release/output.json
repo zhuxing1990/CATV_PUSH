@@ -11,10 +11,10 @@
       "type": "SINGLE",
       "filters": [],
       "properties": [],
-      "versionCode": 2,
-      "versionName": "2",
+      "versionCode": 3,
+      "versionName": "3",
       "enabled": true,
-      "outputFile": "CATV_PUSH_2_2.0_201209.apk"
+      "outputFile": "CATV_PUSH_3_3.0_201210.apk"
     }
   ]
 }

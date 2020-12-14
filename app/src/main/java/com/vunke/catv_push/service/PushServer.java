@@ -62,7 +62,17 @@ public class PushServer extends Service implements MqttCallback,IMqttActionListe
         super.onCreate();
 //        initDeviceInfo();
 //        initMqtt();
-        Observable.interval(15, TimeUnit.SECONDS)
+        long timeout = 15;
+        String productType = DevicesManager.getSystemData(BaseConfig.PRODUCT_TYPE);
+        if ("1".equals(productType)){
+            timeout = 30;
+        }
+        String enable = DevicesManager.getSystemData(BaseConfig.ENABLEM5G);
+        if (enable.equals("enable")){
+            Log.i(TAG,"is 5G device ,outTime is 60");
+            timeout = 75;
+        }
+        Observable.interval(timeout, TimeUnit.SECONDS)
                 .subscribeOn(Schedulers.io())
                 .subscribeOn(AndroidSchedulers.mainThread())
                 .subscribe(new DisposableObserver<Long>() {

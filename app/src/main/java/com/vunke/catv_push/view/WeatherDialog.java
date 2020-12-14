@@ -64,6 +64,12 @@ public class WeatherDialog extends  WeatherBaseDialog{
                         if (disPlayWeatherInfoBean!=null&&disPlayWeatherInfoBean.getPushInfoBean()!=null){
                             Log.i(TAG, "handleMessage: has long term display");
                             Log.i(TAG, "handleMessage: get displayinfo:"+disPlayWeatherInfoBean.getPushInfoBean().toString());
+                            int showRules = disPlayWeatherInfoBean.getPushInfoBean().getShowRules();
+                            if (0==showRules){
+                                Log.i(TAG, "handleMessage: this message not disPlay,delete disPlayInfo");
+                                disPlayWeatherInfoBean.setPushInfoBean(null);
+                                return;
+                            }
                             boolean isExpire = getExpire(disPlayWeatherInfoBean.getPushInfoBean());
                             if (isExpire){
                                 Log.i(TAG, "handleMessage: get displayinfo is expire");
@@ -133,10 +139,23 @@ public class WeatherDialog extends  WeatherBaseDialog{
     public void addPushInfoBean(PushInfoBean pushInfoBean){
         Log.i(TAG, "addPushInfoBean: ");
         if (pushInfoBean!=null){
+            try {
+                if (disPlayWeatherInfoBean!=null&&disPlayWeatherInfoBean.getPushInfoBean()!=null){
+                    if (pushInfoBean.getGroupId().equals(disPlayWeatherInfoBean.getPushInfoBean().getGroupId())){
+                        Log.i(TAG, "addPushInfoBean: disPlay is update,delete pushinfo");
+                        if (0==pushInfoBean.getShowRules()){
+                            disPlayWeatherInfoBean.setPushInfoBean(null);
+                        }
+                    }
+                }
+            }catch (Exception e){
+                e.printStackTrace();
+            }
             if (1==pushInfoBean.getShowRules()){
                 Log.i(TAG, "addPushInfoBean: has long term display");
                 disPlayWeatherInfoBean.setPushInfoBean(pushInfoBean);
             }
+
         }
         Log.i(TAG, "addPushInfoBean: get push "+pushInfoBean.toString());
         if (null==oldWeatherInfoBean.getPushInfoBean()){
@@ -258,7 +277,12 @@ public class WeatherDialog extends  WeatherBaseDialog{
                                         Log.i(TAG, "shwoData timeTime: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,timeTime));
                                         boolean effectiveDate = TimeUtil.isEffectiveDate(timeTime, startTime, endTime);
                                         Log.i(TAG, "shwoData: effectiveDate:"+effectiveDate);
-                                        return effectiveDate;
+                                        if(effectiveDate){
+                                            return true;
+                                        }else{
+                                            getEffectiveDate(pushInfoBean,weatherInfoBean);
+                                            return false;
+                                        }
                                     }
                                 }else{
                                     return false;
@@ -321,6 +345,36 @@ public class WeatherDialog extends  WeatherBaseDialog{
         getExpireObservable(weatherInfoBean);
     }
 
+    private void getEffectiveDate(PushInfoBean pushInfoBean,WeatherInfoBean weatherInfoBean) {
+        Log.i(TAG, "getEffectiveDate: ");
+        try {
+            if(disPlayWeatherInfoBean!=null&&disPlayWeatherInfoBean.getPushInfoBean()!=null){
+                if (pushInfoBean.toString().equals(disPlayWeatherInfoBean.getPushInfoBean().toString())){
+                    if (disPlayWeatherInfoBean.isShow()){
+                        Log.i(TAG, "getEffectiveDate: disPlay message is show,hide this");
+                        SendShowImage(false);
+                        SendShowText(false);
+                        disPlayWeatherInfoBean.setShow(false);
+                        weatherInfoBean.setShow(false);
+                    }
+                }
+            }
+            if(oldWeatherInfoBean!=null&&oldWeatherInfoBean.getPushInfoBean()!=null){
+                if (pushInfoBean.toString().equals(oldWeatherInfoBean.getPushInfoBean().toString())){
+                    if (oldWeatherInfoBean.isShow()){
+                        Log.i(TAG, "getEffectiveDate: old message is show,hide this");
+                        SendShowImage(false);
+                        SendShowText(false);
+                        oldWeatherInfoBean.setShow(false);
+                        weatherInfoBean.setShow(false);
+                    }
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
     private void RemoveExpireMessage(WeatherInfoBean weatherInfoBean) {
         try {
             weatherList.remove(weatherInfoBean);
@@ -336,6 +390,7 @@ public class WeatherDialog extends  WeatherBaseDialog{
         DisposableObserver<Long> expirePbservable = new DisposableObserver<Long>() {
             @Override
             public void onNext(Long aLong) {
+                getEffectiveDate(pushInfoBean,weatherInfoBean);
                 boolean isExpire = getExpire(pushInfoBean);
                 if (isExpire) {
                     Log.i(TAG, "test this push message is expire");

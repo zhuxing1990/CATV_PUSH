@@ -1,15 +1,32 @@
 package com.vunke.catv_push.ui
 
-import androidx.appcompat.app.AppCompatActivity
+import android.app.ActivityManager
+import android.app.ActivityManager.RunningAppProcessInfo
+import android.app.Service
+import android.app.usage.UsageStats
+import android.app.usage.UsageStatsManager
+import android.content.Context
+import android.content.Intent
+import android.media.audiofx.BassBoost
 import android.os.Bundle
+import android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import com.vunke.catv_push.R
-import com.vunke.catv_push.modle.PushInfoBean
-import com.vunke.catv_push.util.PushInfoUtil
+import com.vunke.catv_push.util.Utils
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.observers.DisposableObserver
+import io.reactivex.schedulers.Schedulers
+import java.util.*
+import java.util.concurrent.TimeUnit
+
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         //        var bean = PushInfoBean()
 //        var b = PushInfoBean()
 //        b.createTimes=1606143127554
@@ -58,6 +75,8 @@ class MainActivity : AppCompatActivity() {
 //        bean.marginLeft=0
 //        bean.marginTop = 0
 //        PushInfoUtil.savePushInfo(applicationContext,bean)
-        finish()
+//        finish()
     }
+
+
 }

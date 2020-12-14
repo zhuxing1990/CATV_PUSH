@@ -249,7 +249,7 @@ public class ShowPushService extends Service {
 //                    Log.i(TAG, "initShow: pushType is 4 ,don't show");
 //                }else{
 //                    Log.i(TAG, "initShow: pushType !=4");
-                    boolean isMangguoPlayer = Utils.isMangguoPlayer(this);
+                    boolean isMangguoPlayer = Utils.isEPGPlayer(this);
                     if (isMangguoPlayer){
                         Log.i(TAG, "initShow: mang guo is play video or push message is show,don't show");
                     }else{
