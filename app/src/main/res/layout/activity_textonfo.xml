@@ -18,6 +18,7 @@
         android:layout_alignParentRight="true"
         android:textSize="26sp"
         android:gravity="center"
+        android:visibility="invisible"
         />
     <TextView
         android:id="@+id/push_text_title"

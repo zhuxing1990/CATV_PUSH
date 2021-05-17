@@ -124,7 +124,7 @@ public class Utils {
                         || currentClassName.contains(WhiteList.TOP_ACTIVITY_2)
                         || currentClassName.contains(WhiteList.TOP_ACTIVITY_3)
                 ) {
-                    Log.i(TAG, "isEPGPlayer: mang guo apk is playing video ");
+                    Log.i(TAG, "isEPGPlayer: epg apk is playing video ");
                     return true;
                 } else if (currentClassName.contains("com.vunke.catv_push") || currentClassName.contains("com.vunke.cath_auth")) {
                     Log.i(TAG, "isEPGPlayer:  is push Activity or auth activity,not show");

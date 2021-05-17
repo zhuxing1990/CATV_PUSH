@@ -5,11 +5,13 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.StringCallback;
 import com.lzy.okgo.model.Response;
 import com.vunke.catv_push.base.BaseConfig;
 import com.vunke.catv_push.db.PushTable;
+import com.vunke.catv_push.modle.ChannelBean;
 import com.vunke.catv_push.modle.PushDataBean;
 import com.vunke.catv_push.modle.PushInfoBean;
 import com.vunke.catv_push.modle.PushLog;
@@ -107,5 +109,32 @@ public class PushManager {
         }
    }
 
+   public static void uploadChannelInfo(String info){
+       try {
+           ChannelBean channelBean =  new Gson().fromJson(info, ChannelBean.class);
+           String ca_card = DevicesManager.getSystemData(BaseConfig.CA_CARD);
+           channelBean.setCardId(ca_card);
+           String json = new Gson().toJson(channelBean);
+           OkGo.<String>post(BaseConfig.BASE_URL+BaseConfig.QUERY_CHANNEL)
+           .tag(TAG).upJson(json).execute(new StringCallback() {
+               @Override
+               public void onSuccess(Response<String> response) {
+                   if (!TextUtils.isEmpty(response.body())){
+                       Log.i(TAG, "onSuccess: response:"+response.body());
+                   }
+               }
+
+               @Override
+               public void onError(Response<String> response) {
+                   super.onError(response);
+                   Log.i(TAG, "onError: ");
+               }
+           });
+       } catch (JsonSyntaxException e) {
+           e.printStackTrace();
+       }catch (Exception e){
+           e.printStackTrace();
+       }
+   }
 
 }

@@ -7,7 +7,7 @@ package com.vunke.catv_push.db;
 public class PushTable {
     public static final String TABLE_NAME = "push_info";
     public static final String DATABASE_NAME = "push_info.db";
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 5;
     public static final String PUSH_ID = "push_id";
     public static final String PUSH_NAME="push_name";
     public static final String CREATE_TIMES="create_times";
@@ -35,4 +35,8 @@ public class PushTable {
     public static final String SYSTEM_ID ="systemId";
     public static final String START_TIME ="startTime";
     public static final String END_TIME ="endTime";
+
+    public static final String DVB_CHANNEL_IDS = "dvbChannelIds";
+    public static final String IP_CHANNEL_IDS = "ipChannelIds";
+    public static final String SHOW_SCENE = "showScene";
 }

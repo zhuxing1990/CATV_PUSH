@@ -32,6 +32,10 @@ public class PushInfoBean {
     private long systemId;
     private long startTime;
     private long endTime;
+    private String dvbChannelIds;
+    private String ipChannelIds;
+    private String showScene;
+
     public String getPushId() {
         return pushId;
     }
@@ -248,6 +252,31 @@ public class PushInfoBean {
         this.endTime = endTime;
     }
 
+    public String getDvbChannelIds() {
+        return dvbChannelIds;
+    }
+
+    public void setDvbChannelIds(String dvbChannelIds) {
+        this.dvbChannelIds = dvbChannelIds;
+    }
+
+    public String getIpChannelIds() {
+        return ipChannelIds;
+    }
+
+    public void setIpChannelIds(String ipChannelIds) {
+        this.ipChannelIds = ipChannelIds;
+    }
+
+    public String getShowScene() {
+        return showScene;
+    }
+
+    public void setShowScene(String showScene) {
+        this.showScene = showScene;
+    }
+
+
     @Override
     public String toString() {
         return "PushInfoBean{" +
@@ -278,6 +307,9 @@ public class PushInfoBean {
                 ", systemId=" + systemId +
                 ", startTime=" + startTime +
                 ", endTime=" + endTime +
+                ", dvbChannelIds='" + dvbChannelIds + '\'' +
+                ", ipChannelIds='" + ipChannelIds + '\'' +
+                ", showScene='" + showScene + '\'' +
                 '}';
     }
 }

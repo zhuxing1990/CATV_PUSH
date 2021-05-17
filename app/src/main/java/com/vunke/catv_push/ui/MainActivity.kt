@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        finish()
         //        var bean = PushInfoBean()
 //        var b = PushInfoBean()
 //        b.createTimes=1606143127554

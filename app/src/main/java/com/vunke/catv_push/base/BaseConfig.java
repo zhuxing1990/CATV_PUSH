@@ -2,12 +2,16 @@ package com.vunke.catv_push.base;
 
 public class BaseConfig {
     //测试
-//    public static final String BASE_URL = "http://100.125.19.171:8082";
+//    public static final String BASE_URL = "http://100.125.14.66:8081";
 
     // 内网测试
 //    public static final String BASE_URL = "http://192.168.198.33:8082/realTimePush";
+//    public static final String BASE_URL = "http://192.168.4.228:8081/";
+//    public static final String BASE_URL = "http://192.168.0.110:8080/realTimePush";
+    public static final String BASE_URL = "http://192.168.63.228:8081";
+
     //正式 域名
-    public static final String BASE_URL = "http://wntvmessage.hunancatv.com:8082/realTimePush";
+//    public static final String BASE_URL = "http://wntvmessage.hunancatv.com:8082/realTimePush";
 
     /**
      * 获取推送服务器信息等接口
@@ -22,6 +26,10 @@ public class BaseConfig {
     public static final String PUSH_INFO_CONTENT = "content://com.vunke.catv_push/push_info";
     public static final String TOPIC_CONTENT = "content://com.vunke.catv_push.topic/topic_info";
 
+    /**
+     * 上传频道信息
+     */
+    public static final String QUERY_CHANNEL = "/api/channel/selectChannel";
 
     /**
      *登录时保存账户所在的区域CODE
@@ -75,4 +83,6 @@ public class BaseConfig {
      * 是否组播 ON否 OFF是    old  0 否  1 是
      */
     public static final String IGMP = "persist.sys.multicast";
+
+    public static final String CHANNEL_ID = "channelId";
 }

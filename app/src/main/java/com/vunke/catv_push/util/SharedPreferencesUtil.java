@@ -108,4 +108,15 @@ public class SharedPreferencesUtil {
 		edit.putLong(key, vaule);
 		edit.commit();
 	}
+
+	/**
+	 * 从sp中移除指定节点
+	 *
+	 * @param context 上下文环境
+	 * @param key 需要移除节点的名称
+	 */
+	public static void remove(Context context, String key) {
+		SharedPreferences sp= context.getSharedPreferences(context.getPackageName(), Context.MODE_PRIVATE);
+		sp.edit().remove(key).commit();
+	}
 }

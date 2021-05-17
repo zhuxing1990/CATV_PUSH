@@ -16,6 +16,7 @@
             android:layout_marginRight="10dp"
             android:layout_alignParentRight="true"
             android:textSize="26sp"
+            android:visibility="invisible"
             android:gravity="center"/>
         <VideoView
             android:id="@+id/push_videoview"

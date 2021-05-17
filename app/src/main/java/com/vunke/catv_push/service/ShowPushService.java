@@ -10,10 +10,6 @@ import androidx.annotation.Nullable;
 
 import com.vunke.catv_push.modle.PushInfoBean;
 import com.vunke.catv_push.util.PushInfoUtil;
-import com.vunke.catv_push.util.TimeUtil;
-import com.vunke.catv_push.util.Utils;
-import com.vunke.catv_push.view.PushDialog;
-import com.vunke.catv_push.view.WeatherDialog;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +37,6 @@ public class ShowPushService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-//        initDeviceInfo();
     }
 
     @Override
@@ -66,20 +61,9 @@ public class ShowPushService extends Service {
                 disposableObserver.dispose();
             }
         }
-        if (disposableObserver2!=null){
-            if (!disposableObserver2.isDisposed()){
-                Log.i(TAG, "disposeObserver: dispose disposableObserver2");
-                disposableObserver.dispose();
-            }
-        }
     }
 
-//    private DeviceInfoBean deviceInfoBean;
-//    private void initDeviceInfo() {
-//        deviceInfoBean = new DeviceInfoBean();
-//        DevicesManager.queryDevicesInfo(this, deviceInfoBean);
-//        Log.i(TAG, "initDeviceInfo: deviiceInfoBean:" + deviceInfoBean.toString());
-//    }
+
     private DisposableObserver<Long> timerObserver;
     private void initTimer() {
         Log.i(TAG, "initTimer: ");
@@ -115,7 +99,6 @@ public class ShowPushService extends Service {
                 .subscribe(timerObserver);
     }
     DisposableObserver<PushInfoBean> disposableObserver;
-    DisposableObserver<PushInfoBean> disposableObserver2;
     private void startQuery() {
         Log.i(TAG, "startQuery: ");
         disposeObserver();
@@ -148,24 +131,7 @@ public class ShowPushService extends Service {
                 @Override
                 public void onNext(PushInfoBean pushInfoBean) {
                     Log.i(TAG, "startQuery onNext: "+pushInfoBean);
-                    String pushType = pushInfoBean.getPushType();
-                    if ("4".equals(pushType)) {
-                        Log.i(TAG, "startQuery: get pushtype is 4");
-                        boolean isAuth = Utils.isAuth(ShowPushService.this);
-                        if (isAuth){
-                            Log.i(TAG, "weatherDialog: isAuth or push message is show,don't show");
-                        }else{
-                            Log.i(TAG, "weatherDialog: start show");
-                            WeatherDialog weatherDialog = WeatherDialog.getInstance(getApplicationContext());
-                            if (!weatherDialog.isShow()) {
-                                weatherDialog.showView();
-                            }
-                            weatherDialog.addPushInfoBean(pushInfoBean);
-                        }
-                    }else{
-                        Log.i(TAG, "startQuery: get pushtype is default ");
-                        initShow(pushInfoBean);
-                    }
+                    PushInfoUtil.initShow(ShowPushService.this,pushInfoBean);
                 }
 
                 @Override
@@ -183,104 +149,8 @@ public class ShowPushService extends Service {
             zipObservable.subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(disposableObserver);
-//            Observable<PushInfoBean> pushInfoBeanObservable2 = Observable.fromIterable(pushInfoList)
-//                    .filter(new Predicate<PushInfoBean>() {
-//                        @Override
-//                        public boolean test(PushInfoBean pushInfoBean) throws Exception {
-//                            String pushType = pushInfoBean.getPushType();
-//                            if ("4".equals(pushType)){
-//                                Log.i(TAG, "test: get pushtype is 4");
-//                                return true;
-//                            }else{
-//                                return false;
-//                            }
-//                        }
-//                    });
-//            disposableObserver2 = new DisposableObserver<PushInfoBean>() {
-//                @Override
-//                public void onNext(PushInfoBean pushInfoBean) {
-//                    Log.i(TAG, "startQuery pushType = 4 onNext: "+pushInfoBean.toString());
-//                    WeatherDialog weatherDialog = WeatherDialog.getInstance(getApplicationContext());
-//                    if (!weatherDialog.isShow()){
-//                        weatherDialog.showView();
-//                    }
-//                    weatherDialog.savePushInfoBean(pushInfoBean);
-//                }
-//
-//                @Override
-//                public void onError(Throwable e) {
-//                    Log.i(TAG, "onError: ");
-//                    e.printStackTrace();
-//                    dispose();
-//                }
-//
-//                @Override
-//                public void onComplete() {
-//                    Log.i(TAG, "onComplete: ");
-//                    dispose();
-//                }
-//            };
-//            pushInfoBeanObservable2.subscribeOn(Schedulers.io())
-//                    .observeOn(AndroidSchedulers.mainThread())
-//                    .subscribe(disposableObserver2);
         }else {
             Log.i(TAG, "startQuery: query over,not message");
-        }
-    }
-
-    private void initShow(PushInfoBean pushInfoBean) {
-        Log.i(TAG, "initShow: ");
-        long time = System.currentTimeMillis();
-        long expire_time = pushInfoBean.getExpireTime();
-        Log.i(TAG, "initShow new time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,time));
-        Log.i(TAG, "initShow expire_time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,expire_time));
-        boolean isExpire = TimeUtil.isExpire(time,expire_time);
-        if (!isExpire){
-            Log.i(TAG, "onNext: this push message not expire");
-            long show_start_time = pushInfoBean.getShowStartTime();
-            Log.i(TAG, "initShow show_start_time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,show_start_time));
-            long show_end_time = pushInfoBean.getShowEndTime();
-            Log.i(TAG, "initShow show_end_time: "+TimeUtil.getDateTime(TimeUtil.dateFormatYMDHMofChinese,show_end_time));
-            boolean isShow =TimeUtil.isEffectiveDate(time,show_start_time,show_end_time);
-            if (isShow){
-                Log.i(TAG, "onNext: this push message can show");
-//                String pushType = pushInfoBean.getPushType();
-//                if ("4".equals(pushType)){
-//                    Log.i(TAG, "initShow: pushType is 4 ,don't show");
-//                }else{
-//                    Log.i(TAG, "initShow: pushType !=4");
-                    boolean isMangguoPlayer = Utils.isEPGPlayer(this);
-                    if (isMangguoPlayer){
-                        Log.i(TAG, "initShow: mang guo is play video or push message is show,don't show");
-                    }else{
-                        try {
-                            PushDialog instance = PushDialog.getInstance(this);
-                            if (!instance.isShow()){
-                                Log.i(TAG, "initShow: start show");
-                                instance.showView(pushInfoBean);
-                                pushInfoBean.setPushStatus("3");
-                                PushInfoUtil.uploadPushLog(pushInfoBean,this);
-                                PushInfoUtil.deletePushInfo(this,pushInfoBean.getPushId());
-                            }else{
-                                Log.i(TAG, "initShow:  dialog is show ,don't show");
-                            }
-                        }catch (Exception e){
-                            e.printStackTrace();
-                        }
-                    }
-//                }
-
-            }else{
-                Log.i(TAG, "onNext: this push message can't show");
-                boolean expire = TimeUtil.isExpire(time, show_end_time);
-                if (expire){
-                    Log.i(TAG, "initShow: show_end_time is expire");
-                    PushInfoUtil.deletePushInfo(this,pushInfoBean.getPushId());
-                }
-            }
-        }else{
-            Log.i(TAG, "onNext: this push message is expire");
-            PushInfoUtil.deletePushInfo(this,pushInfoBean.getPushId());
         }
     }
 

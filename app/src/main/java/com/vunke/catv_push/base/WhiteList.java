@@ -1,9 +1,9 @@
 package com.vunke.catv_push.base;
 
 public class WhiteList {
-    public static final String TOP_ACTIVITY_0 = "com.hunancatv.dvb/com.gala.video.app.epg.HomeActivity";
+    public static final String TOP_ACTIVITY_0 = "com.gala.video.app.epg.HomeActivity";
     public static final String TOP_ACTIVITY_1 = "com.gala.video.app.opr.voice.VoiceSearchResultActivity";
-    public static final String TOP_ACTIVITY_2 = "com.hunancatv.dvb/com.gala.video.app.albumdetail.AlbumDetailActivity";
+    public static final String TOP_ACTIVITY_2 = "com.gala.video.app.albumdetail.AlbumDetailActivity";
     public static final String TOP_ACTIVITY_3 = "com.gala.video.app.opr.live.player.playback.LivePlaybackActivity";
 //    public static final String TOP_ACTIVITY_4 = "";
 //    public static final String TOP_ACTIVITY_5 = "";

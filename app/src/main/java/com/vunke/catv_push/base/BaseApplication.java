@@ -1,10 +1,13 @@
 package com.vunke.catv_push.base;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 
 import com.lzy.okgo.OkGo;
+import com.vunke.catv_push.receiver.ChannelReceiver;
 import com.vunke.catv_push.service.PushServer;
 import com.vunke.catv_push.service.ShowPushService;
 import com.vunke.catv_push.util.SharedPreferencesUtil;
@@ -30,8 +33,10 @@ public class BaseApplication extends Application {
         super.onCreate();
         instance = this;
         OkGo.getInstance().init(this);
+        Log.i(TAG, "onCreate: clear channel_id");
+        SharedPreferencesUtil.setStringValue(this,BaseConfig.CHANNEL_ID,"");
+        Log.i(TAG, "onCreate: clear clean session ");
         SharedPreferencesUtil.setBooleanValue(this,SharedPreferencesUtil.CleanSessionKey,true);
-        OkGo.getInstance().init(this);
         startService(new Intent(this, PushServer.class));
         Observable.interval(20, TimeUnit.SECONDS).subscribeOn(Schedulers.io())
                 .subscribe(new DisposableObserver<Long>() {
@@ -54,7 +59,15 @@ public class BaseApplication extends Application {
                         dispose();
                     }
                 });
+        registerBroadcastReceiver(this);
     }
-
+//注册广播
+    private void registerBroadcastReceiver(Context context) {
+        Log.i(TAG, "registerBroadcastReceiver: ");
+        ChannelReceiver channelReceiver = new ChannelReceiver();
+        IntentFilter myIntentFilter =new IntentFilter();
+        myIntentFilter.addAction(ChannelReceiver.ACTION_NAME);
+        context.registerReceiver(channelReceiver, myIntentFilter);
+    }
 
 }

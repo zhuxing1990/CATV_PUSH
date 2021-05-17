@@ -41,7 +41,10 @@ class PushSQLite(context: Context): SQLiteOpenHelper(context, PushTable.DATABASE
                     "${PushTable.SHOW_RULES} integer ,"+
                     "${PushTable.SYSTEM_ID} integer ,"+
                     "${PushTable.START_TIME} integer ,"+
-                    "${PushTable.END_TIME} integer "+
+                    "${PushTable.END_TIME} integer ,"+
+                    "${PushTable.DVB_CHANNEL_IDS} varchat ,"+
+                    "${PushTable.IP_CHANNEL_IDS} varchat ,"+
+                    "${PushTable.SHOW_SCENE} varchat "+
                     ")"
             Log.i(TAG,"sql:$createTable")
             db!!.execSQL(createTable)
